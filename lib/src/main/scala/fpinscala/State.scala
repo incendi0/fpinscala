@@ -1,5 +1,9 @@
 package fpinscala.state
 
+import fpinscala.state.State.{get, modify, sequence, unit}
+
+import scala.annotation.tailrec
+
 trait RNG {
   def nextInt: (Int, RNG)
 }
@@ -45,6 +49,7 @@ object RNG {
   }
 
   def ints(count: Int)(rng: RNG): (List[Int], RNG) = {
+    @tailrec
     def go(count: Int, rng: RNG, xs: List[Int]): (List[Int], RNG) = {
       if (count == 0) {
         (xs, rng)
@@ -86,12 +91,98 @@ object RNG {
   def sequence[A](fs: List[Rand[A]]): Rand[List[A]] =
     fs.foldRight(unit(List[A]()))((f, acc) => map2(f, acc)(_ :: _))
 
-  def main(args: Array[String]): Unit = {
-    val rng = SimpleRNG(2)
-    (1 to 4).foreach(i => {
-      val (xs, r) = ints(i)(rng)
-      println(xs)
-      println(r)
+  def nonNegativeLessThan(n: Int): Rand[Int] = rng => {
+    val (x, r) = intRNG(rng)
+    val mod = x % n
+    if (x + n - 1 - mod >= 0) {
+      (mod, r)
+    } else {
+      nonNegativeLessThan(n)(r)
+    }
+  }
+
+  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = rng => {
+    val (a, r) = f(rng)
+    g(a)(r)
+  }
+
+  def nonNegativeLessThanViaFlatMap(n: Int): Rand[Int] =
+    flatMap(nonNegativeInt)(x => {
+      val mod = x % n
+      if (x + n - 1 - mod >= 0) unit(mod) else nonNegativeLessThan(n)
     })
+
+  def _map[A, B](s: Rand[A])(f: A => B): Rand[B] =
+    flatMap(s)(a => unit(f(a)))
+
+  def _map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+    flatMap(ra)(a => map(rb)(b => f(a, b)))
+
+  def main(args: Array[String]): Unit = {
+    val rng = SimpleRNG(144477)
+//    (1 to 4).foreach(i => {
+//      val (xs, r) = ints(i)(rng)
+//      println(xs)
+//      println(r)
+//    })
+    println(nonNegativeLessThan(Int.MaxValue / 2 + 14444)(rng))
+  }
+}
+
+case class State[S, +A](run: S => (A, S)) {
+  def flatMap[B](f: A => State[S, B]): State[S, B] = State(s => {
+    val (a, s2) = run(s)
+    f(a).run(s2)
+  })
+  def map[B](f: A => B): State[S, B] = flatMap(a => unit(f(a)))
+  def map2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
+    flatMap(a => sb.map(b => f(a, b)))
+//    for {
+//      a <- this
+//      b <- sb
+//    } yield f(a, b)
+}
+
+object State {
+  def unit[S, A](a: A): State[S, A] = State(s => (a, s))
+
+  def sequence[S, A](sas: List[State[S, A]]): State[S, List[A]] =
+    sas.foldRight(unit[S, List[A]](List[A]()))((a, acc) => a.map2(acc)(_ :: _))
+
+//  type Rand[A] = State[RNG, A]
+
+  def get[S]: State[S, S] = State(s => (s, s))
+  def set[S](s: S): State[S, Unit] = State(_ => ((), s))
+  def modify[S](f: S => S): State[S, Unit] =
+    for {
+      s <- get
+      _ <- set(f(s))
+    } yield ()
+}
+
+sealed trait Input
+case object Coin extends Input
+case object Turn extends Input
+
+case class Machine(locked: Boolean, candies: Int, coins: Int)
+
+object Machine {
+
+  def update(input: Input, machine: Machine): Machine = (input, machine) match {
+    case (Coin, Machine(true, candies, coins)) if candies > 0 => Machine(locked = false, candies, coins + 1)
+    case (Turn, Machine(false, candies, coins)) if candies > 0 => Machine(locked = true, candies - 1, coins)
+    case _ => machine
+  }
+
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] =
+    sequence(inputs.map(input => modify(m => update(input, m)))).flatMap(_ => get.map(s => (s.candies, s.coins)))
+
+  def main(args: Array[String]): Unit = {
+//    val inputs = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
+    val inputs = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
+    val machine = Machine(true, 5, 10)
+    val (candies, coins) = simulateMachine(inputs).run(machine)
+    println(coins)
+    println(candies)
   }
 }
