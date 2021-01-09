@@ -71,7 +71,7 @@ object Par {
 
   def sortPar(parList: Par[List[Int]]): Par[List[Int]] = map2(parList, unit(()))((a, _) => a.sorted)
 
-  def map[A,B](pa: Par[A])(f: A => B): Par[B] =
+  def map[A, B](pa: Par[A])(f: A => B): Par[B] =
     map2(pa, unit(()))((a, _) => f(a))
 
   def sequenceBalanced[A](ps: IndexedSeq[Par[A]]): Par[IndexedSeq[A]] = fork {
@@ -85,11 +85,12 @@ object Par {
 
   def sequence[A](as: List[Par[A]]): Par[List[A]] =
     map(sequenceBalanced(as.toIndexedSeq))(_.toList)
-//    ps match {
-//      case Nil => unit(Nil)
-//      case h :: t => map2(h, fork(sequence(t)))(_ :: _)
-//    }
-//    ps.foldRight[Par[List[A]]](unit(List[Par[A]]()))((a, acc) => map2(a, acc)(_ :: _))
+
+  //    ps match {
+  //      case Nil => unit(Nil)
+  //      case h :: t => map2(h, fork(sequence(t)))(_ :: _)
+  //    }
+  //    ps.foldRight[Par[List[A]]](unit(List[Par[A]]()))((a, acc) => map2(a, acc)(_ :: _))
 
   def parMap[A, B](ps: List[A])(f: A => B): Par[List[B]] = {
     val fbs: List[Par[B]] = ps.map(asyncF(f))
@@ -101,10 +102,10 @@ object Par {
     map(sequence(pars))(_.flatten)
   }
 
-  def equal[A](es: ExecutorService)(pa1: Par[A], pa2: Par[A]):Boolean = pa1(es).get == pa2(es).get
+  def equal[A](es: ExecutorService)(pa1: Par[A], pa2: Par[A]): Boolean = pa1(es).get == pa2(es).get
 
   def main(args: Array[String]): Unit = {
-    val a = lazyUnit(42 +1)
+    val a = lazyUnit(42 + 1)
     val es = Executors.newFixedThreadPool(1)
     // deadlock
     println(Par.equal(es)(a, fork(a)))

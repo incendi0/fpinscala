@@ -24,6 +24,11 @@ object RNG {
     (if (x < 0) -(x + 1) else x, r)
   }
 
+  def boolean(rng: RNG): (Boolean, RNG) = {
+    val (d, r) = nonNegativeInt(rng)
+    (d % 2 == 1, r)
+  }
+
   def doubleRNG(rng: RNG): (Double, RNG) = {
     val (x, r) = nonNegativeInt(rng)
     (x / (Int.MaxValue.toDouble + 1), r)

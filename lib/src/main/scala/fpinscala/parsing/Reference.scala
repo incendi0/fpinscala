@@ -1,6 +1,6 @@
 package fpinscala.parsing
 
-import fpinscala.parsing.ReferenceTypes.{Failure, Parser, ParserState, Result, Success, firstNonMatchingIndex}
+import fpinscala.parsing.ReferenceTypes._
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

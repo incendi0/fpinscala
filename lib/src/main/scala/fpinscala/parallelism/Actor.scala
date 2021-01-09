@@ -1,8 +1,8 @@
 package fpinscala.parallelism
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import java.util.concurrent.{Callable,ExecutorService}
-import annotation.tailrec
+import java.util.concurrent.{Callable, ExecutorService}
+import scala.annotation.tailrec
 
 /*
  * Implementation is taken from `scalaz` library, with only minor changes. See:

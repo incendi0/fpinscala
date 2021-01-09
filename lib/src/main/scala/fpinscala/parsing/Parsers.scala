@@ -1,7 +1,6 @@
 package fpinscala.parsing
 
 import java.util.regex.Pattern
-
 import scala.util.matching.Regex
 
 trait Parsers[Parser[+_]] { self =>
@@ -141,7 +140,7 @@ case class ParseError(stack: List[(Location, String)]) {
       }.mkString("\n") + context
     }
 
-  def formatLoc(l: Location): String = l.line + "." + l.col
+  def formatLoc(l: Location): String = s"${l.line}.${l.col}"
 }
 
 case class Location(input: String, offset: Int = 0) {
@@ -157,7 +156,7 @@ case class Location(input: String, offset: Int = 0) {
   def advanceBy(n: Int): Location = copy(offset = offset + n)
 
   def currentLine: String =
-    if (input.length > 1) input.linesIterator.drop(line - 1).next
+    if (input.length > 1) input.linesIterator.drop(line - 1).next()
     else ""
 
   def columnCaret: String = (" " * (col - 1)) + "^"

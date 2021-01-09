@@ -1,11 +1,11 @@
 package fpinscala.parallelism
 
-import java.util.concurrent.{Callable, CountDownLatch, ExecutorService}
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{Callable, CountDownLatch, ExecutorService}
 
 object Nonblocking {
 
-  trait Future[A] {
+  trait Future[+A] {
     private[parallelism] def apply(cb: A => Unit): Unit
   }
 
@@ -121,9 +121,14 @@ object Nonblocking {
 
     class ParOps[A](p: Par[A]) {
       def map[B](f: A => B): Par[B] = Par.map(p)(f)
+
       def map2[B, C](b: Par[B])(f: (A, B) => C): Par[C] = Par.map2(p, b)(f)
+
       def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(p)(f)
+
       def zip[B](b: Par[B]): Par[(A, B)] = p.map2(b)((_, _))
     }
+
   }
+
 }

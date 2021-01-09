@@ -1,7 +1,7 @@
 package fpinscala.testing
 
 import fpinscala.state.{RNG, State}
-import fpinscala.testing.Prop.{Falsified, MaxSize, Passed, Proved, Result, TestCases, forAll}
+import fpinscala.testing.Prop._
 
 case class Gen[+A](sample: State[RNG, A]) {
   def map[B](f: A => B): Gen[B] = Gen(sample.map(f))
